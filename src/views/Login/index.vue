@@ -1,11 +1,9 @@
 <template>
-  <div>黑马头条</div>
+  <div></div>
 </template>
 
 <script>
-export default {
-  name: 'App'
-}
+export default {}
 </script>
 
 <style></style>
