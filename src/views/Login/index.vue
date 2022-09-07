@@ -1,19 +1,12 @@
 <template>
   <div>
     <van-nav-bar title="登录" class="nav-bar" />
-    <van-form @submit="onSubmit" class="form">
+    <van-form @submit="onSubmit" class="form" ref="form">
       <van-field
         v-model="mobile"
         name="mobile"
         placeholder="请输入手机号"
-        :rules="[
-          { required: true, message: '请填写手机号' },
-          {
-            pattern:
-              /^(0|86|17951)?(13[0-9]|15[012356789]|166|17[3678]|18[0-9]|14[57])[0-9]{8}$/,
-            message: '手机号格式错误'
-          }
-        ]"
+        :rules="mobileRules"
       >
         <template #label>
           <span class="toutiao toutiao-shouji"></span>
@@ -23,13 +16,29 @@
         v-model="code"
         name="code"
         placeholder="请输入验证码"
-        :rules="[
-          { required: true, message: '请填写验证码' },
-          { pattern: /^[0-9]{6}$/, message: '验证码格式错误' }
-        ]"
+        :rules="codeRules"
       >
         <template #label>
           <span class="toutiao toutiao-yanzhengma"></span>
+        </template>
+        <template #button>
+          <van-button
+            v-if="isShow"
+            @click="sendCode"
+            class="btn"
+            size="small"
+            block
+            round
+            type="default"
+            native-type="button"
+            >获取验证码</van-button
+          >
+          <van-count-down
+            v-else
+            :time="3 * 1000"
+            format="ss秒"
+            @finish="isShow = true"
+          />
         </template>
       </van-field>
       <div style="margin: 16px">
@@ -40,16 +49,64 @@
 </template>
 
 <script>
+import { login, sendCodeAPI } from '@/api'
+import { mapMutations } from 'vuex'
+import { codeRules, mobileRules } from './rules'
 export default {
   data() {
     return {
       mobile: '',
-      code: ''
+      code: '',
+      mobileRules,
+      codeRules,
+      isShow: true
     }
   },
   methods: {
-    onSubmit(values) {
-      console.log('submit', values)
+    ...mapMutations(['SET_TOKEN']),
+    loading() {
+      this.$toast.loading({
+        message: '加载中...',
+        forbidClick: true,
+        duration: 0
+      })
+    },
+    async onSubmit() {
+      this.loading()
+
+      try {
+        const { data } = await login(this.mobile, this.code)
+        console.log(data)
+        this.SET_TOKEN(data.data)
+        this.$router.push('/profile')
+        this.$toast.success('登录成功')
+      } catch (error) {
+        if (error.response && error.response.status === 400) {
+          this.$toast.fail(error.response.data.message)
+        } else {
+          console.dir(error)
+          this.$toast.clear()
+        }
+      }
+    },
+    async sendCode() {
+      await this.$refs.form.validate('mobile')
+      this.loading()
+      try {
+        await sendCodeAPI(this.mobile)
+        this.isShow = false
+        this.$toast.success('发送验证码成功')
+      } catch (error) {
+        if (
+          error.response &&
+          (error.response.status === 429 || error.response.status === 404)
+        ) {
+          this.$toast.fail(error.response.data.message)
+        } else {
+          this.$toast.clear()
+          throw error
+        }
+      }
     }
   }
 }
@@ -73,5 +130,10 @@ export default {
   .toutiao {
     font-size: 40px;
   }
+}
+.btn {
+  height: 0.64rem;
+  backdrop-filter: #eee;
+  color: #a58594;
 }
 </style>
