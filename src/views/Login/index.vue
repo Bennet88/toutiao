@@ -81,7 +81,7 @@ export default {
         this.$router.push('/profile')
         this.$toast.success('登录成功')
       } catch (error) {
-        if (error.response && error.response.status === 400) {
+        if (error.response?.status === 400) {
           this.$toast.fail(error.response.data.message)
         } else {
           console.dir(error)
