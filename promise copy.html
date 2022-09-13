@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+        const REJECTED = 'rejected'
+        const FULFILLED = 'fulfilled'
+        const PENDING = 'pending'
+        class Promise {
+            value
+            reason
+            status = PENDING
+            onFulfilledCallback = []
+            onRejectedCallback = []
+
+            constructor(executor) {
+                const resolve = (value) => {
+                    if (this.status === PENDING) {
+                        this.value = value
+                        this.status = FULFILLED
+                        this.onFulfilledCallback.forEach(cb => cb())
+                    }
+                }
+                const reject = (reason) => {
+                    if (this.status === PENDING) {
+                        this.reason = reason
+                        this.status = REJECTED
+                        this.onRejectedCallback.forEach(cb => cb())
+                    }
+                }
+
+                try {
+                    executor(resolve, reject)
+                } catch (error) {
+                    reject(error)
+                }
+            }
+            then(onFulfilled, onRejected) {
+                    if (this.status === FULFILLED) {
+                        onFulfilled(this.value)
+                    }
+                    if (this.status === REJECTED) {
+                        onRejected(this.reason)
+                    }
+                    if (this.status === PENDING) {
+                        this.onFulfilledCallback.push(() => onFulfilled(this.value))
+                        this.onRejectedCallback.push(() => onRejected(this.reason))
+                    }
+                }
+        }
+    
+
+        const p = new Promise((reslove, reject) => {
+            setTimeout(() => {
+                reslove('成功')
+                // reject('失败')
+            }, 3000)
+        })
+
+        p.then(
+            res => console.log('第一次then',res),
+        )
+
+        p.then(
+            res => console.log('第二次then',res),
+        )
+    </script>
+</body>
+
+</html>
