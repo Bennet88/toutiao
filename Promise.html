@@ -59,26 +59,59 @@
             }
 
             then(onFulfilled, onRejected) {
-                if (this.status === FULFILLED) {
-                    onFulfilled(this.value)
-                }
 
-                if (this.status === REJECTED) {
-                    onRejected(this.reason)
-                }
+                const p2 = new Promise((resolve, reject) => {
+                    if (this.status === FULFILLED) {
+                        queueMicrotask(() => {
+                            try {
+                                const x = onFulfilled(this.value)
+                                resolve(x)
+                            } catch (error) {
+                                reject(error)
+                            }
+                        })
+                    }
 
-                if (this.status === PENDING) {
-                    // 异步
-                    // 订阅
-                    // this.onFulfilled = onFulfilled
-                    // this.onRejected = onRejected
-                    this.onFulfilledCallbacks.push(() => {
-                        onFulfilled(this.value)
-                    })
-                    this.onRejectedCallbacks.push(() => {
-                        onRejected(this.reason)
-                    })
-                }
+                    if (this.status === REJECTED) {
+                        queueMicrotask(() => {
+                            try {
+                                const x = onRejected(this.reason)
+                                resolve(x)
+                            } catch (error) {
+                                reject(error)
+                            }
+                        })
+                    }
+
+                    if (this.status === PENDING) {
+                        // 异步
+                        // 订阅
+                        // this.onFulfilled = onFulfilled
+                        // this.onRejected = onRejected
+                        queueMicrotask(() => {
+                            try {
+                                this.onFulfilledCallbacks.push(() => {
+                                    const x = onFulfilled(this.value)
+                                    resolve(x)
+                                })
+                            } catch (error) {
+                                reject(error)
+                            }
+
+                        })
+                        queueMicrotask(() => {
+                            try {
+                                this.onRejectedCallbacks.push(() => {
+                                    const x = onRejected(this.reason)
+                                    resolve(x)
+                                })
+                            } catch (error) {
+                                reject(error)
+                            }
+                        })
+                    }
+                })
+                return p2
             }
         }
 
@@ -86,16 +119,9 @@
             setTimeout(() => {
                 reslove('成功')
                 // reject('失败')
-            }, 3000)
+            }, 1000)
         })
-
-        p.then(
-            res => console.log('第一次then',res),
-        )
-
-        p.then(
-            res => console.log('第二次then',res),
-        )
+        p.then(() => { }, () => { })
     </script>
 </body>
 
